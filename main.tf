@@ -6,12 +6,12 @@ resource "digitalocean_project" "bka_k8s" {
   environment = "Development"
 }
 
-# Your VPC
+# Lookup default VPC
 data "digitalocean_vpc" "fra1" {
   name = "default-fra1"
 }
 
-# Kubernetes cluster
+# Create Kubernetes cluster
 resource "digitalocean_kubernetes_cluster" "fra1_single_node" {
   name    = "do-bka-single-node-cluster"
   region  = "fra1"
@@ -31,6 +31,11 @@ resource "digitalocean_project_resources" "assign_cluster_to_project" {
   project = digitalocean_project.bka_k8s.id
   resources = [
     digitalocean_kubernetes_cluster.fra1_single_node.urn
+  ]
+
+  # Ensure proper destroy order
+  depends_on = [
+    digitalocean_kubernetes_cluster.fra1_single_node
   ]
 }
 
