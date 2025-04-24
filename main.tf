@@ -1,41 +1,45 @@
-# Create a new project
+resource "digitalocean_vpc" "custom_vpc" {
+  name     = var.vpc_name
+  region   = var.region
+  ip_range = var.vpc_cidr
+}
+
 resource "digitalocean_project" "bka_k8s" {
-  name        = "bka-k8s"
-  description = "Project for BKA Kubernetes cluster"
-  purpose     = "Web Application Hosting"
-  environment = "Development"
+  name        = var.project_name
+  description = var.project_description
+  purpose     = var.project_purpose
+  environment = var.project_environment
 }
 
-# Lookup default VPC
-data "digitalocean_vpc" "fra1" {
-  name = "default-fra1"
-}
-
-# Create Kubernetes cluster
 resource "digitalocean_kubernetes_cluster" "fra1_single_node" {
-  name    = "do-bka-single-node-cluster"
-  region  = "fra1"
-  version = "1.32.2-do.0"
+  name    = var.cluster_name
+  region  = var.region
+  version = var.cluster_version
 
   node_pool {
-    name       = "default-pool"
-    size       = "s-2vcpu-4gb"
-    node_count = 1
+    name       = var.node_pool_name
+    size       = var.node_size
+    node_count = var.node_count
   }
 
-  vpc_uuid = data.digitalocean_vpc.fra1.id
+  vpc_uuid = digitalocean_vpc.custom_vpc.id
+
+  depends_on = [digitalocean_vpc.custom_vpc]
 }
 
-# Assign the cluster to the new project
 resource "digitalocean_project_resources" "assign_cluster_to_project" {
   project = digitalocean_project.bka_k8s.id
   resources = [
     digitalocean_kubernetes_cluster.fra1_single_node.urn
   ]
 
-  # Ensure proper destroy order
   depends_on = [
-    digitalocean_kubernetes_cluster.fra1_single_node
+    digitalocean_kubernetes_cluster.fra1_single_node,
+    digitalocean_project.bka_k8s
   ]
+}
+
+resource "null_resource" "vpc_guard" {
+  depends_on = [digitalocean_kubernetes_cluster.fra1_single_node]
 }
 
