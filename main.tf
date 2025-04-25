@@ -11,7 +11,7 @@ resource "digitalocean_project" "bka_k8s" {
   environment = var.project_environment
 }
 
-resource "digitalocean_kubernetes_cluster" "fra1_single_node" {
+resource "digitalocean_kubernetes_cluster" "single_node" {
   name    = var.cluster_name
   region  = var.region
   version = var.cluster_version
@@ -30,16 +30,16 @@ resource "digitalocean_kubernetes_cluster" "fra1_single_node" {
 resource "digitalocean_project_resources" "assign_cluster_to_project" {
   project = digitalocean_project.bka_k8s.id
   resources = [
-    digitalocean_kubernetes_cluster.fra1_single_node.urn
+    digitalocean_kubernetes_cluster.single_node.urn
   ]
 
   depends_on = [
-    digitalocean_kubernetes_cluster.fra1_single_node,
+    digitalocean_kubernetes_cluster.single_node,
     digitalocean_project.bka_k8s
   ]
 }
 
 resource "null_resource" "vpc_guard" {
-  depends_on = [digitalocean_kubernetes_cluster.fra1_single_node]
+  depends_on = [digitalocean_kubernetes_cluster.single_node]
 }
 
